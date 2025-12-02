@@ -1,10 +1,22 @@
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search, User, Menu } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
-export function Header() {
+interface HeaderProps {
+    onMenuClick: () => void;
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
     return (
-        <header className="sticky top-0 z-10 flex h-16 w-full items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-sm">
+        <header className="sticky top-0 z-10 flex h-16 w-full items-center justify-between border-b border-border bg-background/80 px-4 md:px-6 backdrop-blur-sm">
             <div className="flex items-center gap-4">
-                <div className="relative">
+                <button
+                    onClick={onMenuClick}
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground md:hidden hover:bg-muted hover:text-foreground"
+                >
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle menu</span>
+                </button>
+                <div className="relative hidden sm:block">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <input
                         type="text"
@@ -14,7 +26,9 @@ export function Header() {
                 </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
+                <ThemeToggle />
+
                 <button className="relative rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
                     <Bell className="h-5 w-5" />
                     <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />

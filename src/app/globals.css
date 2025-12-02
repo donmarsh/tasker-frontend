@@ -43,51 +43,49 @@
   --popover-foreground: #0f172a;
 
   /* Sidebar */
-  --sidebar-background: #0f172a;
-  /* Slate 900 */
-  --sidebar-foreground: #f8fafc;
+  --sidebar-background: #f8fafc;
   /* Slate 50 */
-  --sidebar-accent: #1e293b;
-  /* Slate 800 */
+  --sidebar-foreground: #0f172a;
+  /* Slate 900 */
+  --sidebar-accent: #e2e8f0;
+  /* Slate 200 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    /* Slate 950 */
-    --foreground: #f8fafc;
-    /* Slate 50 */
+html.dark {
+  --background: #020617;
+  /* Slate 950 */
+  --foreground: #f8fafc;
+  /* Slate 50 */
 
-    --primary: #818cf8;
-    /* Indigo 400 */
-    --primary-foreground: #0f172a;
-    --primary-hover: #6366f1;
-    /* Indigo 500 */
+  --primary: #818cf8;
+  /* Indigo 400 */
+  --primary-foreground: #0f172a;
+  --primary-hover: #6366f1;
+  /* Indigo 500 */
 
-    --secondary: #1e293b;
-    /* Slate 800 */
-    --secondary-foreground: #f8fafc;
-    --accent: #1e293b;
-    --accent-foreground: #f8fafc;
+  --secondary: #1e293b;
+  /* Slate 800 */
+  --secondary-foreground: #f8fafc;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
 
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    /* Slate 400 */
-    --border: #1e293b;
-    --input: #1e293b;
-    --ring: #818cf8;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  /* Slate 400 */
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #818cf8;
 
-    --card: #0f172a;
-    /* Slate 900 */
-    --card-foreground: #f8fafc;
-    --popover: #0f172a;
-    --popover-foreground: #f8fafc;
+  --card: #0f172a;
+  /* Slate 900 */
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
 
-    --sidebar-background: #020617;
-    /* Slate 950 */
-    --sidebar-foreground: #f8fafc;
-    --sidebar-accent: #1e293b;
-  }
+  --sidebar-background: #020617;
+  /* Slate 950 */
+  --sidebar-foreground: #f8fafc;
+  --sidebar-accent: #1e293b;
 }
 
 @theme inline {
