@@ -8,9 +8,10 @@ import { useAuth } from "@/hooks/useAuth";
 
 const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
-    { name: "Projects", href: "/projects", icon: FolderKanban, adminOnly: true },
-    { name: "My Tasks", href: "/tasks", icon: CheckSquare, adminOnly: false },
-    { name: "Team", href: "/team", icon: Users, adminOnly: false },
+    { name: "Manage Projects", href: "/projects", icon: FolderKanban, adminOnly: true },
+    { name: "Manage Users", href: "/users", icon: Users, adminOnly: true },
+    { name: "Manage Tasks", href: "/tasks", icon: Users, adminOnly: true },
+    { name: "My Tasks", href: "/mytasks", icon: CheckSquare, adminOnly: false },
     { name: "Settings", href: "/settings", icon: Settings, adminOnly: false },
 ];
 
