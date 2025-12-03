@@ -22,10 +22,10 @@ export default function LoginPage() {
         setError("");
 
         try {
-            await api.post("/auth/login", { email, password });
+            await api.post("/auth/login/", { email, password });
             // If successful, the middleware/backend handles the cookie.
             // We just need to redirect.
-            router.push("/");
+            router.push("/dashboard");
             router.refresh(); // Refresh to update middleware state
         } catch (err: any) {
             setError(err.message || "Failed to login. Please check your credentials.");

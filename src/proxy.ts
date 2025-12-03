@@ -13,13 +13,15 @@ export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Debug log to verify middleware is running
-    // console.log(`Middleware running for path: ${pathname}`);
+    console.log(`[Proxy Debug] Middleware running for path: ${pathname}`);
 
     // Check if the current path is a public path
     const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
+    console.log(`[Proxy Debug] Is public path: ${isPublicPath}`);
 
     // Get the token from the cookies
-    const token = request.cookies.get("token")?.value;
+    const token = request.cookies.get("access_token")?.value;
+    console.log(`[Proxy Debug] Token present: ${!!token}`);
 
     // Redirect logic
     if (!token && !isPublicPath) {
@@ -27,13 +29,15 @@ export function proxy(request: NextRequest) {
         const url = request.nextUrl.clone();
         url.pathname = "/login";
         url.searchParams.set("callbackUrl", pathname);
+        console.log(`[Proxy Debug] Redirecting to login`);
         return NextResponse.redirect(url);
     }
 
     if (token && isPublicPath) {
         // If user is authenticated and trying to access a public route
         const url = request.nextUrl.clone();
-        url.pathname = "/";
+        url.pathname = "/dashboard";
+        console.log(`[Proxy Debug] Redirecting to dashboard`);
         return NextResponse.redirect(url);
     }
 

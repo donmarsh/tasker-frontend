@@ -4,17 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, CheckSquare, Users, Settings, FolderKanban, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 const navigation = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Projects", href: "/projects", icon: FolderKanban },
-    { name: "My Tasks", href: "/tasks", icon: CheckSquare },
-    { name: "Team", href: "/team", icon: Users },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
+    { name: "Projects", href: "/projects", icon: FolderKanban, adminOnly: true },
+    { name: "My Tasks", href: "/tasks", icon: CheckSquare, adminOnly: false },
+    { name: "Team", href: "/team", icon: Users, adminOnly: false },
+    { name: "Settings", href: "/settings", icon: Settings, adminOnly: false },
 ];
 
 export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
     const pathname = usePathname();
+    const { isAdmin, isLoading } = useAuth();
+
+    // Filter navigation based on user role
+    const filteredNavigation = navigation.filter(item => {
+        if (item.adminOnly) {
+            return isAdmin;
+        }
+        return true;
+    });
 
     return (
         <div className={cn("flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-accent", className)}>
@@ -29,7 +39,7 @@ export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
 
             <div className="flex-1 overflow-y-auto py-6 px-3">
                 <nav className="space-y-1">
-                    {navigation.map((item) => {
+                    {filteredNavigation.map((item) => {
                         const isActive = pathname === item.href;
 
                         return (
