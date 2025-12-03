@@ -31,7 +31,15 @@ export function decodeToken(token: string): DecodedToken | null {
  */
 export function getUserRoles(token: string): string[] {
     const decoded = decodeToken(token);
-    return decoded?.roles || [];
+    if (!decoded) return [];
+    // Support either `roles` array or a single `role` object in the token
+    if (Array.isArray(decoded.roles) && decoded.roles.length) return decoded.roles;
+    if (decoded.role) {
+        // role object may have `role_name` or `name`
+        const rn = (decoded.role as any).role_name || (decoded.role as any).name || String((decoded.role as any).id);
+        return [rn];
+    }
+    return [];
 }
 
 /**

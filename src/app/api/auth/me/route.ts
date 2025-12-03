@@ -23,11 +23,16 @@ export async function GET(request: NextRequest) {
 
         const decoded = JSON.parse(jsonPayload);
 
+        // Support both new `role` object and legacy `roles` array in the token
+        const roleObj = decoded.role ?? null;
+        const rolesArray: string[] = decoded.roles || (roleObj ? [roleObj.role_name || roleObj.name || String(roleObj.id)] : []);
+
         return NextResponse.json({
             authenticated: true,
             user_id: decoded.user_id,
             email: decoded.email,
-            roles: decoded.roles || [],
+            role: roleObj,
+            roles: rolesArray,
         });
     } catch (error) {
         console.error('Failed to decode token:', error);
