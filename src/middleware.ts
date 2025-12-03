@@ -12,27 +12,26 @@ const publicPaths = [
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
+    // Debug log to verify middleware is running
+    // console.log(`Middleware running for path: ${pathname}`);
+
     // Check if the current path is a public path
     const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
 
     // Get the token from the cookies
-    // Adjust the cookie name 'token' if your API uses a different name (e.g., 'jwt', 'session_id')
     const token = request.cookies.get("token")?.value;
 
     // Redirect logic
     if (!token && !isPublicPath) {
         // If user is not authenticated and trying to access a protected route
-        // Redirect to login page
         const url = request.nextUrl.clone();
         url.pathname = "/login";
-        // Optional: Add the original URL as a query parameter to redirect back after login
         url.searchParams.set("callbackUrl", pathname);
         return NextResponse.redirect(url);
     }
 
     if (token && isPublicPath) {
-        // If user is authenticated and trying to access a public route (like login)
-        // Redirect to dashboard
+        // If user is authenticated and trying to access a public route
         const url = request.nextUrl.clone();
         url.pathname = "/";
         return NextResponse.redirect(url);
