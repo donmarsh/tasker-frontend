@@ -59,5 +59,5 @@ export function useAuth() {
         }
     };
 
-    return { roles, userId, email, username, isAdmin, isManager, isLoading, isAuthenticated };
+    return { roles, userId, email, full_name, username, isAdmin, isManager, isLoading, isAuthenticated };
 }
