@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 
 export default function LoginPage() {
     const router = useRouter();
+    const formRef = useRef<HTMLFormElement | null>(null);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -59,7 +60,7 @@ export default function LoginPage() {
                         Enter your email and password to access your account
                     </CardDescription>
                 </CardHeader>
-                <form onSubmit={handleLogin}>
+                <form ref={formRef} onSubmit={handleLogin}>
                     <CardContent className="grid gap-4">
                         {error && (
                             <div className="text-sm text-red-500 font-medium">
@@ -87,6 +88,12 @@ export default function LoginPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 disabled={isLoading}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        formRef.current?.requestSubmit();
+                                    }
+                                }}
                             />
                         </div>
                         <div className="flex items-center justify-between">
