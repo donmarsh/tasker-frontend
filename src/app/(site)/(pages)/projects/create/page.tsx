@@ -39,8 +39,24 @@ export default function CreateProjectPage() {
 
             await api.post("/projects/", projectData);
             router.push("/projects");
-        } catch (err: any) {
-            setError(err.message || "Failed to create project");
+        } catch (err: unknown) {
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to create project";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to create project";
+            })();
+            setError(message);
         } finally {
             setIsLoading(false);
         }

@@ -29,7 +29,7 @@ export default function MyTasksPage() {
         try {
             setIsLoading(true);
             setError(null);
-            const data = await api.get<Task[]>(`/tasks?assigned_to=${userId}`);
+            const data = await api.get<Task[]>(`/tasks?assignee_id=${userId}`);
             setTasks(data);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
@@ -65,7 +65,9 @@ export default function MyTasksPage() {
 
     const filteredTasks = tasks.filter((task) => {
         if (filter === "all") return true;
-        return task.status.name.toLowerCase() === filter.toLowerCase();
+        // normalize filter (e.g. in_progress -> in progress) for comparison
+        const normalizedFilter = filter.replace(/_/g, " ").toLowerCase();
+        return task.status.name.toLowerCase() === normalizedFilter;
     });
 
     const getStatusColor = (statusName: string) => {
@@ -75,7 +77,7 @@ export default function MyTasksPage() {
             case "in progress":
             case "in_progress":
                 return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-            case "pending":
+                case "todo":
                 return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
             default:
                 return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
@@ -134,7 +136,7 @@ export default function MyTasksPage() {
 
     const taskCounts = {
         all: tasks.length,
-        pending: tasks.filter((t) => t.status.name.toLowerCase() === "pending").length,
+        todo: tasks.filter((t) => t.status.name.toLowerCase() === "todo").length,
         in_progress: tasks.filter((t) => {
             const n = t.status.name.toLowerCase();
             return n === "in_progress" || n === "in progress";
@@ -164,14 +166,14 @@ export default function MyTasksPage() {
                     All ({taskCounts.all})
                 </button>
                 <button
-                    onClick={() => setFilter("pending")}
+                    onClick={() => setFilter("todo")}
                     className={`px-4 py-2 font-medium transition-colors ${
-                        filter === "pending"
+                        filter === "todo"
                             ? "border-b-2 border-primary text-primary"
                             : "text-muted-foreground hover:text-foreground"
                     }`}
                 >
-                    Pending ({taskCounts.pending})
+                    Todo ({taskCounts.todo})
                 </button>
                 <button
                     onClick={() => setFilter("in_progress")}
@@ -243,7 +245,7 @@ export default function MyTasksPage() {
                                 <div className="flex gap-2 flex-wrap">
                                     {task.status.name.toLowerCase() !== "completed" && (
                                         <>
-                                            {task.status.name.toLowerCase() === "pending" && (
+                                            {task.status.name.toLowerCase() === "todo" && (
                                                 <Button
                                                     size="sm"
                                                     onClick={() => updateTaskStatus(task.id, 2)}

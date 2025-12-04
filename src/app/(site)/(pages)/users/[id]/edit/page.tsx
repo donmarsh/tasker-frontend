@@ -57,9 +57,25 @@ export default function EditUserPage() {
                 // pre-select role if user has a role object
                 const firstRoleId = data?.role?.id ?? "";
                 setSelectedRole(firstRoleId === "" ? "" : Number(firstRoleId));
-            } catch (err) {
+            } catch (err: unknown) {
                 console.error("Failed to load user", err);
-                setError(err instanceof Error ? err.message : String(err));
+                const message = ((): string => {
+                    if (err instanceof Error) {
+                        const e = err as Error & { body?: unknown };
+                        if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                            return String((e.body as Record<string, unknown>).error);
+                        }
+                        return err.message || "Failed to load user";
+                    }
+                    if (typeof err === "object" && err !== null) {
+                        const o = err as Record<string, unknown>;
+                        if (o.error) return String(o.error);
+                        if (o.message) return String(o.message);
+                    }
+                    if (typeof err === "string") return err;
+                    return "Failed to load user";
+                })();
+                setError(message);
             } finally {
                 setLoading(false);
             }
@@ -100,9 +116,25 @@ export default function EditUserPage() {
 
             await api.patch(`/auth/users/${id}/`, payload);
             router.push("/users");
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Save failed", err);
-            setError(err instanceof Error ? err.message : String(err));
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to save user";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to save user";
+            })();
+            setError(message);
         } finally {
             setSaving(false);
         }

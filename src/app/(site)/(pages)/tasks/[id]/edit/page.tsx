@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -15,7 +15,7 @@ interface Task {
     description?: string;
     status?: { id: number; name: string };
     deadline?: string;
-    assignee_id?: number | null;
+    assignee?:{id: number; username: string } | null;
     project?: { id: number; name: string } | null;
     created_at?: string;
     modified_at?: string;
@@ -53,12 +53,7 @@ export default function EditTaskPage() {
     const [deadline, setDeadline] = useState<string>("");
     const [statusId, setStatusId] = useState<number>(1);
 
-    useEffect(() => {
-        if (!id) return;
-        fetchData();
-    }, [id]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const [taskData, usersData, projectsData] = await Promise.all([
@@ -74,16 +69,37 @@ export default function EditTaskPage() {
             setTitle(taskData.title || "");
             setDescription(taskData.description || "");
             setProjectId(taskData.project?.id ?? "");
-            setAssigneeId(taskData.assignee_id ?? "");
+            setAssigneeId(taskData.assignee?.id ?? "");
             setDeadline(taskData.deadline ? taskData.deadline.split("T")[0] : "");
             setStatusId(taskData.status?.id ?? 1);
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to load task", err);
-            setError(err instanceof Error ? err.message : String(err));
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to load task";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to load task";
+            })();
+            setError(message);
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        if (!id) return;
+        fetchData();
+    }, [id, fetchData]);
 
     const save = async () => {
         if (!id) return;
@@ -99,10 +115,26 @@ export default function EditTaskPage() {
             };
             console.log("Saving task with payload:", payload);
             await api.patch(`/tasks/${id}/`, payload);
-            router.back();
-        } catch (err) {
+            router.push("/tasks");
+        } catch (err: unknown) {
             console.error("Save failed", err);
-            setError(err instanceof Error ? err.message : String(err));
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to save task";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to save task";
+            })();
+            setError(message);
         } finally {
             setSaving(false);
         }
@@ -203,7 +235,7 @@ export default function EditTaskPage() {
                         <div>
                             <Label>Status</Label>
                             <select value={statusId} onChange={(e) => setStatusId(Number(e.target.value))} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                <option value={1}>Pending</option>
+                                <option value={1}>Todo</option>
                                 <option value={2}>In Progress</option>
                                 <option value={3}>Completed</option>
                             </select>

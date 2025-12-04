@@ -64,9 +64,63 @@ export default function CreateUserPage() {
             if (selectedRole) payload.role = { id: selectedRole };
             await api.post("/auth/register/", payload);
             router.push("/users");
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Create user failed", err);
-            setError(err instanceof Error ? err.message : String(err));
+
+            let message = "Failed to create user";
+
+            if (err instanceof Error) {
+                // Prefer structured body attached by `apiFetch` when available
+                const eWithBody = err as Error & { body?: unknown };
+                if (eWithBody.body && typeof eWithBody.body === "object") {
+                    const body = eWithBody.body as Record<string, unknown>;
+                    if (body.error) message = String(body.error);
+                    else if (body.message) message = String(body.message);
+                    else {
+                        const vals = Object.values(body);
+                        if (vals.length > 0) {
+                            const first = vals[0];
+                            if (Array.isArray(first)) message = String(first.join(", "));
+                            else if (typeof first === "string") message = first;
+                            else message = JSON.stringify(body);
+                        }
+                    }
+                } else {
+                    message = err.message || message;
+
+                    // Sometimes the thrown message may contain a JSON string — try to parse it.
+                    try {
+                        const parsed = JSON.parse(message);
+                        if (parsed && typeof parsed === "object") {
+                            const p = parsed as Record<string, unknown>;
+                            if (p.error) message = String(p.error);
+                            else if (p.message) message = String(p.message);
+                            else {
+                                const vals = Object.values(p);
+                                if (vals.length > 0) {
+                                    const first = vals[0];
+                                    if (Array.isArray(first)) message = String(first.join(", "));
+                                    else message = String(first);
+                                }
+                            }
+                        }
+                    } catch {
+                        // not JSON — keep original message
+                    }
+                }
+            } else if (typeof err === "object" && err !== null) {
+                try {
+                    const asObj = err as Record<string, unknown>;
+                    if (asObj.error) message = String(asObj.error);
+                    else if (asObj.message) message = String(asObj.message);
+                } catch {
+                    // ignore
+                }
+            } else if (typeof err === "string") {
+                message = err;
+            }
+
+            setError(message);
         } finally {
             setSaving(false);
         }

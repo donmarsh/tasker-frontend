@@ -24,8 +24,20 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
             // window.location.href = '/login';
         }
 
-        const error = await res.json().catch(() => ({ message: 'An error occurred' }));
-        throw new Error(error.message || error.detail || `API Error: ${res.status}`);
+        // Parse JSON body if possible. The backend returns a simple
+        // `{ "error": "..." }` structure on failure — prefer that.
+        const errorBody = await res.json();
+        console.log('API error body:', errorBody);
+        let message = `API Error: ${res.status}`;
+
+        if (errorBody && typeof errorBody['error'] === 'string') {
+            message = String(errorBody['error']);
+        }
+
+        const e = new Error(message) as Error & { body?: unknown; status?: number };
+        e.body = errorBody;
+        e.status = res.status;
+        throw e;
     }
 
     return res.json();
@@ -36,13 +48,13 @@ export const api = {
     get: <T>(endpoint: string, options?: FetchOptions) =>
         apiFetch<T>(endpoint, { ...options, method: 'GET' }),
 
-    post: <T>(endpoint: string, body: any, options?: FetchOptions) =>
+    post: <T, B = unknown>(endpoint: string, body: B, options?: FetchOptions) =>
         apiFetch<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
 
-    put: <T>(endpoint: string, body: any, options?: FetchOptions) =>
+    put: <T, B = unknown>(endpoint: string, body: B, options?: FetchOptions) =>
         apiFetch<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
 
-    patch: <T>(endpoint: string, body: any, options?: FetchOptions) =>
+    patch: <T, B = unknown>(endpoint: string, body: B, options?: FetchOptions) =>
         apiFetch<T>(endpoint, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
 
     delete: <T>(endpoint: string, options?: FetchOptions) =>

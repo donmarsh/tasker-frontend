@@ -7,23 +7,31 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
 const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
-    { name: "Manage Projects", href: "/projects", icon: FolderKanban, adminOnly: true },
-    { name: "Manage Users", href: "/users", icon: Users, adminOnly: true },
-    { name: "Manage Tasks", href: "/tasks", icon: Users, adminOnly: true },
-    { name: "My Tasks", href: "/my-tasks", icon: CheckSquare, adminOnly: false },
-    { name: "Settings", href: "/settings", icon: Settings, adminOnly: false },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false, managerOnly: false },
+    // Managers and admins can manage projects
+    { name: "Manage Projects", href: "/projects", icon: FolderKanban, adminOnly: true, managerOnly: false },
+    // Only admins can manage users
+    { name: "Manage Users", href: "/users", icon: Users, adminOnly: true, managerOnly: false },
+    // Managers and admins can manage tasks
+    { name: "Manage Tasks", href: "/tasks", icon: Users, adminOnly: false, managerOnly: true },
+    { name: "My Tasks", href: "/my-tasks", icon: CheckSquare, adminOnly: false, managerOnly: false },
+    { name: "Settings", href: "/settings", icon: Settings, adminOnly: false, managerOnly: false },
 ];
 
 export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
     const pathname = usePathname();
-    const { isAdmin, isLoading } = useAuth();
+    const { isAdmin, roles } = useAuth();
+    const isManager = roles && (roles.includes("Manager") || roles.includes("manager"));
 
     // Filter navigation based on user role
-    const filteredNavigation = navigation.filter(item => {
-        if (item.adminOnly) {
-            return isAdmin;
-        }
+    const filteredNavigation = navigation.filter((item) => {
+        // Admin-only routes
+        if (item.adminOnly) return !!isAdmin;
+
+        // Manager-only routes (managers or admins)
+        if (item.managerOnly) return !!isManager || !!isAdmin;
+
+        // Public routes
         return true;
     });
 

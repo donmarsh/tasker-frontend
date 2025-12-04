@@ -42,7 +42,7 @@ interface Project {
 }
 
 export default function TasksPage() {
-    const { isAdmin, isLoading: authLoading } = useAuth();
+    const { isAdmin, isManager, isLoading: authLoading } = useAuth();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
@@ -76,10 +76,25 @@ export default function TasksPage() {
             setTasks(tasksData || []);
             setUsers(usersData || []);
             setProjects(projectsData || []);
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to fetch admin data", err);
-            const message = err instanceof Error ? err.message : String(err);
-            setError(message || "Failed to load data");
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to load data";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to load data";
+            })();
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -89,9 +104,25 @@ export default function TasksPage() {
         try {
             const updated = await api.patch<Task>(`/tasks/${taskId}/`, patch);
             setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Update failed", err);
-            alert("Failed to update task");
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to update task";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to update task";
+            })();
+            alert(message);
         }
     };
 
@@ -106,28 +137,72 @@ export default function TasksPage() {
         try {
             await api.delete(`/tasks/${id}`);
             setTasks((prev) => prev.filter((t) => t.id !== id));
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Delete failed", err);
-            alert("Failed to delete task");
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to delete task";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to delete task";
+            })();
+            alert(message);
         }
     };
 
-    const getStatusLabel = (statusId?: number) => {
-        const statuses: Record<number, string> = {
-            1: "Pending",
-            2: "In Progress",
-            3: "Completed",
-        };
-        return statusId ? statuses[statusId] || "Unknown" : "Unknown";
+    const getStatusLabel = (value?: number | string) => {
+        if (typeof value === "number") {
+            const statuses: Record<number, string> = {
+                1: "Todo",
+                2: "In Progress",
+                3: "Completed",
+            };
+            return statuses[value] || "Unknown";
+        }
+
+        if (typeof value === "string") {
+            const n = value.replace(/_/g, " ").toLowerCase();
+            if (n === "todo") return "Todo";
+            if (n === "in progress") return "In Progress";
+            if (n === "completed") return "Completed";
+            return value;
+        }
+
+        return "Unknown";
     };
 
-    const getStatusColor = (statusId?: number) => {
-        const colors: Record<number, string> = {
-            1: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-            2: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-            3: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    const getStatusColor = (value?: number | string) => {
+        const normalize = (v?: number | string) => {
+            if (typeof v === "number") {
+                if (v === 1) return "todo";
+                if (v === 2) return "in_progress";
+                if (v === 3) return "completed";
+                return "unknown";
+            }
+            if (typeof v === "string") return v.replace(/ /g, "_").toLowerCase();
+            return "unknown";
         };
-        return statusId ? colors[statusId] || "bg-gray-100 text-gray-800" : "bg-gray-100 text-gray-800";
+
+        const n = normalize(value);
+        switch (n) {
+            case "completed":
+                return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+            case "in_progress":
+                return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+            case "todo":
+                return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+            default:
+                return "bg-gray-100 text-gray-800";
+        }
     };
 
     const createTask = async () => {
@@ -137,16 +212,16 @@ export default function TasksPage() {
         }
 
         try {
-            const payload = {
+                const payload = {
                 title: newTitle,
                 description: newDesc,
                 project_id: newProject,
                 assignee_id: newAssignee,
                 deadline: newDue || null,
-                status_id: 1, // default to 'pending' id
+                    status_id: 1, // default to 'todo' id
             };
 
-            const created = await api.post<Task>(`/tasks`, payload);
+            const created = await api.post<Task>(`/tasks/`, payload);
             setTasks((prev) => [created, ...prev]);
             // reset form
             setNewTitle("");
@@ -154,9 +229,25 @@ export default function TasksPage() {
             setNewProject(null);
             setNewAssignee(null);
             setNewDue("");
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Create failed", err);
-            alert("Failed to create task");
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to create task";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to create task";
+            })();
+            alert(message);
         }
     };
 
@@ -171,7 +262,7 @@ export default function TasksPage() {
         );
     }
 
-    if (!isAdmin) {
+    if (!isAdmin && !isManager) {
         return (
             <div className="space-y-6">
                 <h2 className="text-3xl font-bold tracking-tight">Admin: All Tasks</h2>
@@ -289,7 +380,7 @@ export default function TasksPage() {
                                             </td>
                                             <td className="py-3 px-4">
                                                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(task.status.id)}`}>
-                                                    {getStatusLabel(task.status.id)}
+                                                    {getStatusLabel(task.status.name ?? task.status.id)}
                                                 </span>
                                             </td>
                                             <td className="py-3 px-4 text-sm text-muted-foreground">{task.deadline ? new Date(task.deadline).toLocaleDateString() : "—"}</td>
@@ -304,7 +395,7 @@ export default function TasksPage() {
                                                         Complete
                                                     </button>
                                                     <button
-                                                        onClick={() => updateTask(task.id, { status: { id: 1, name: "Pending" } })}
+                                                        onClick={() => updateTask(task.id, { status: { id: 1, name: "Todo" } })}
                                                         className="px-2 py-1 rounded-md bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors text-sm"
                                                         title="Reset status"
                                                     >

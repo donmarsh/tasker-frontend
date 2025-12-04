@@ -27,8 +27,24 @@ export default function LoginPage() {
             // We just need to redirect.
             router.push("/dashboard");
             router.refresh(); // Refresh to update middleware state
-        } catch (err: any) {
-            setError(err.message || "Failed to login. Please check your credentials.");
+        } catch (err: unknown) {
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to login. Please check your credentials.";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to login. Please check your credentials.";
+            })();
+            setError(message);
         } finally {
             setIsLoading(false);
         }

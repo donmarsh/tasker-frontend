@@ -91,7 +91,7 @@ export default function Dashboard() {
                                 {
                                     title: "API Integration",
                                     project: "Tasker Backend",
-                                    status: "Pending",
+                                    status: "Todo",
                                     date: "Yesterday",
                                 },
                                 {

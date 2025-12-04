@@ -41,23 +41,11 @@ export function Header({ onMenuClick }: HeaderProps) {
                     <Menu className="h-5 w-5" />
                     <span className="sr-only">Toggle menu</span>
                 </button>
-                <div className="relative hidden sm:block">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <input
-                        type="text"
-                        placeholder="Search tasks..."
-                        className="h-9 w-64 rounded-md border border-input bg-muted/50 pl-9 pr-4 text-sm outline-none focus:ring-2 focus:ring-ring"
-                    />
-                </div>
+                
             </div>
 
             <div className="flex items-center gap-2 md:gap-4">
                 <ThemeToggle />
-
-                <button className="relative rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
-                </button>
 
                 <div className="relative">
                     <button

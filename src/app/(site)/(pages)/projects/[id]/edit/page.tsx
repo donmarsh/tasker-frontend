@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -35,11 +35,7 @@ export default function EditProjectPage() {
     const [isFetching, setIsFetching] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        fetchProject();
-    }, [projectId]);
-
-    const fetchProject = async () => {
+    const fetchProject = useCallback(async () => {
         try {
             setIsFetching(true);
             const project = await api.get<Project>(`/projects/${projectId}/`);
@@ -54,12 +50,32 @@ export default function EditProjectPage() {
                 setProjectEndDate(project.project_end_date.split('T')[0]);
             }
             setProjectStatusId(project.project_status.id.toString());
-        } catch (err: any) {
-            setError(err.message || "Failed to fetch project");
+        } catch (err: unknown) {
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to fetch project";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to fetch project";
+            })();
+            setError(message);
         } finally {
             setIsFetching(false);
         }
-    };
+    }, [projectId]);
+
+    useEffect(() => {
+        fetchProject();
+    }, [projectId, fetchProject]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -81,8 +97,24 @@ export default function EditProjectPage() {
 
             await api.put(`/projects/${projectId}/`, projectData);
             router.push("/projects");
-        } catch (err: any) {
-            setError(err.message || "Failed to update project");
+        } catch (err: unknown) {
+            const message = ((): string => {
+                if (err instanceof Error) {
+                    const e = err as Error & { body?: unknown };
+                    if (e.body && typeof e.body === "object" && "error" in (e.body as Record<string, unknown>)) {
+                        return String((e.body as Record<string, unknown>).error);
+                    }
+                    return err.message || "Failed to update project";
+                }
+                if (typeof err === "object" && err !== null) {
+                    const o = err as Record<string, unknown>;
+                    if (o.error) return String(o.error);
+                    if (o.message) return String(o.message);
+                }
+                if (typeof err === "string") return err;
+                return "Failed to update project";
+            })();
+            setError(message);
         } finally {
             setIsLoading(false);
         }
