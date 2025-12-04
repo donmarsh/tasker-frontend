@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Search, User, Menu, LogOut, Settings } from "lucide-react";
+import {  User, Menu, LogOut, Settings } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "./ThemeToggle";
 import { api } from "@/lib/api";
 
@@ -11,7 +12,8 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
     const router = useRouter();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
+    const { username, email } = useAuth();
+    console.log(username);
     const handleLogout = async () => {
         try {
             // Attempt to call backend logout if it exists
@@ -45,6 +47,10 @@ export function Header({ onMenuClick }: HeaderProps) {
             </div>
 
             <div className="flex items-center gap-2 md:gap-4">
+                {/* show username on md+ */}
+                <div className="hidden md:block text-sm text-muted-foreground mr-2">
+                    {username ?? email ?? ""}
+                </div>
                 <ThemeToggle />
 
                 <div className="relative">

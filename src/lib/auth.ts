@@ -3,7 +3,8 @@ export interface DecodedToken {
     email: string;
     // New token shape: single `role` object. Keep `roles` optional for backward compatibility.
     role?: { id: number; role_name?: string; name?: string } | null;
-    roles?: string[];
+    username?:string;
+    full_name?:string;
     exp: number;
     iat: number;
 }

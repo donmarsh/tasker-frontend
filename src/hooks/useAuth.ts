@@ -6,7 +6,8 @@ interface UserInfo {
     authenticated: boolean;
     user_id?: number;
     email?: string;
-    // New shape: single `role` object. Keep legacy `roles` for compatibility.
+    username?: string;
+    full_name: string;
     role?: { id: number; role_name?: string; name?: string } | null;
 }
 
@@ -14,6 +15,9 @@ export function useAuth() {
     const [roles, setRoles] = useState<string[]>([]);
     const [userId, setUserId] = useState<number | null>(null);
     const [email, setEmail] = useState<string | null>(null);
+    const [username, setUsername] = useState<string | null>(null);
+    const [full_name, setFullname] = useState<string | null>(null);
+
     const [isAdmin, setIsAdmin] = useState(false);
     const [isManager, setIsManager] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +42,10 @@ export function useAuth() {
                     setRoles(derivedRoles);
                     setUserId(data.user_id || null);
                     setEmail(data.email || null);
+                    // prefer explicit username/name if available, otherwise fall back to email
+                    const possibleUsername = (data as unknown as Record<string, unknown>).username || (data as unknown as Record<string, unknown>).name || data.email;
+                    setFullname(data.full_name || null);
+                    setUsername(typeof possibleUsername === "string" ? possibleUsername : null);
                     setIsAdmin(derivedRoles.includes('Admin') || derivedRoles.includes('admin'));
                     setIsManager(derivedRoles.includes('Manager') || derivedRoles.includes('manager'));
                     setIsAuthenticated(true);
@@ -51,5 +59,5 @@ export function useAuth() {
         }
     };
 
-    return { roles, userId, email, isAdmin, isManager, isLoading, isAuthenticated };
+    return { roles, userId, email, username, isAdmin, isManager, isLoading, isAuthenticated };
 }

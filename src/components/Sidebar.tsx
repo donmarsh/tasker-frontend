@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { LayoutDashboard, CheckSquare, Users, Settings, FolderKanban, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
 
 const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false, managerOnly: false },
@@ -22,6 +25,24 @@ export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
     const pathname = usePathname();
     const { isAdmin, roles } = useAuth();
     const isManager = roles && (roles.includes("Manager") || roles.includes("manager"));
+    const router = useRouter();
+    const [settingsOpen, setSettingsOpen] = useState<boolean>(
+        pathname === "/settings" || pathname === "/change-password" || !!pathname?.startsWith("/settings")
+    );
+
+    const handleSignOut = async () => {
+        try {
+            await api.post("/auth/logout/", {}).catch(() => {});
+        } finally {
+            // clear client-side cookies (httpOnly cookies require backend)
+            document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+            document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+            document.cookie = "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+
+            router.push("/login");
+            router.refresh();
+        }
+    };
 
     // Filter navigation based on user role
     const filteredNavigation = navigation.filter((item) => {
@@ -51,6 +72,44 @@ export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
                     {filteredNavigation.map((item) => {
                         const isActive = pathname === item.href;
 
+                        // Render Settings as a toggle that expands a submenu for Change Password
+                        if (item.name === "Settings") {
+                            const parentActive = pathname === item.href || pathname === "/change-password" || pathname?.startsWith("/settings");
+                            return (
+                                <div key={item.name}>
+                                    <button
+                                        onClick={() => setSettingsOpen((s) => !s)}
+                                        className={cn(
+                                            "group flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors text-left",
+                                            parentActive
+                                                ? "bg-sidebar-accent text-sidebar-foreground"
+                                                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                        )}
+                                    >
+                                        <item.icon className="h-5 w-5 shrink-0" />
+                                        {item.name}
+                                    </button>
+
+                                    {settingsOpen && (
+                                        <nav className="mt-1 ml-8 flex flex-col space-y-1">
+                                            <Link
+                                                href="/settings/change-password"
+                                                className={cn(
+                                                    "group flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors",
+                                                    pathname === "/change-password"
+                                                        ? "bg-sidebar-accent text-sidebar-foreground"
+                                                        : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                                )}
+                                            >
+                                                <LogOut className="h-4 w-4 shrink-0" />
+                                                Change password
+                                            </Link>
+                                        </nav>
+                                    )}
+                                </div>
+                            );
+                        }
+
                         return (
                             <Link
                                 key={item.name}
@@ -71,7 +130,7 @@ export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
             </div>
 
             <div className="p-4 border-t border-sidebar-accent">
-                <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground">
+                <button onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground">
                     <LogOut className="h-5 w-5" />
                     Sign Out
                 </button>
