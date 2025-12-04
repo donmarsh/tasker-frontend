@@ -6,6 +6,8 @@ interface UserInfo {
     authenticated: boolean;
     user_id?: number;
     email?: string;
+    // New shape: single `role` object. Keep legacy `roles` for compatibility.
+    role?: { id: number; role_name?: string; name?: string } | null;
     roles?: string[];
 }
 
@@ -31,11 +33,12 @@ export function useAuth() {
                 const data: UserInfo = await response.json();
 
                 if (data.authenticated) {
-                    const userRoles = data.roles || [];
-                    setRoles(userRoles);
+                    // derive roles array from `role` object, or fall back to legacy `roles`
+                    const derivedRoles = data.role ? [data.role.role_name || data.role.name || String(data.role.id)] : (data.roles || []);
+                    setRoles(derivedRoles);
                     setUserId(data.user_id || null);
                     setEmail(data.email || null);
-                    setIsAdmin(userRoles.includes('Admin') || userRoles.includes('admin'));
+                    setIsAdmin(derivedRoles.includes('Admin') || derivedRoles.includes('admin'));
                     setIsAuthenticated(true);
                     console.log("User info:", data);
                 }

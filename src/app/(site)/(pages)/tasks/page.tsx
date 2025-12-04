@@ -297,14 +297,14 @@ export default function TasksPage() {
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        onClick={() => updateTask(task.id, { status_id: 3 })}
+                                                        onClick={() => updateTask(task.id, { status: { id: 3, name: "Completed" } })}
                                                         className="px-2 py-1 rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors text-sm"
                                                         title="Mark complete"
                                                     >
                                                         Complete
                                                     </button>
                                                     <button
-                                                        onClick={() => updateTask(task.id, { status_id: 1 })}
+                                                        onClick={() => updateTask(task.id, { status: { id: 1, name: "Pending" } })}
                                                         className="px-2 py-1 rounded-md bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors text-sm"
                                                         title="Reset status"
                                                     >
@@ -319,7 +319,7 @@ export default function TasksPage() {
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(task.id)}
-                                                        className="p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                                        className="p-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
                                                         title="Delete task"
                                                     >
                                                         <Trash2 className="h-4 w-4" />

@@ -124,7 +124,12 @@ export default function UsersPage() {
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button onClick={() => handleEdit(u.id)} className="px-3 py-1 rounded-md bg-primary/5 hover:bg-primary/10 text-sm">Edit</button>
-                                                    <button onClick={() => handleDelete(u.id)} className="px-3 py-1 rounded-md bg-red-50 hover:bg-red-100 text-sm">Delete</button>
+                                                    <button
+                                                        onClick={() => handleDelete(u.id)}
+                                                        className="px-3 py-1 rounded-md bg-red hover:bg-red-100 text-sm text-white-700 dark:bg-red-600 dark:text-red dark:hover:bg-red-900"
+                                                    >
+                                                        Delete
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>

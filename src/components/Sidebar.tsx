@@ -11,7 +11,7 @@ const navigation = [
     { name: "Manage Projects", href: "/projects", icon: FolderKanban, adminOnly: true },
     { name: "Manage Users", href: "/users", icon: Users, adminOnly: true },
     { name: "Manage Tasks", href: "/tasks", icon: Users, adminOnly: true },
-    { name: "My Tasks", href: "/mytasks", icon: CheckSquare, adminOnly: false },
+    { name: "My Tasks", href: "/my-tasks", icon: CheckSquare, adminOnly: false },
     { name: "Settings", href: "/settings", icon: Settings, adminOnly: false },
 ];
 

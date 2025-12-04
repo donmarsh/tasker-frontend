@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -10,14 +10,13 @@ interface Task {
     id: number;
     title: string;
     description?: string;
-    status: string;
-    priority?: string;
-    due_date?: string;
-    assigned_to?: number;
-    project_id?: number;
-    project_name?: string;
+    status: { id: number; name: string };
+    assignee?: { id: number | null; username?: string } | null;
+    deadline?: string | null;
+    project?: { id: number; name: string } | null;
     created_at: string;
-    updated_at: string;
+    modified_at?: string;
+    deleted_at?: string | null;
 }
 
 export default function MyTasksPage() {
@@ -26,6 +25,20 @@ export default function MyTasksPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<string>("all");
+    const fetchMyTasks = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const data = await api.get<Task[]>(`/tasks?assigned_to=${userId}`);
+            setTasks(data);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            setError(message || "Failed to fetch tasks");
+            console.error("Error fetching tasks:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [userId]);
 
     useEffect(() => {
         if (!authLoading && userId) {
@@ -33,46 +46,34 @@ export default function MyTasksPage() {
         } else if (!authLoading && !userId) {
             setIsLoading(false);
         }
-    }, [userId, authLoading]);
+    }, [userId, authLoading, fetchMyTasks]);
 
-    const fetchMyTasks = async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            const data = await api.get<Task[]>(`/tasks?assigned_to=${userId}`);
-            setTasks(data);
-        } catch (err: any) {
-            setError(err.message || "Failed to fetch tasks");
-            console.error("Error fetching tasks:", err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    
 
-    const updateTaskStatus = async (taskId: number, newStatus: string) => {
+    
+
+    const updateTaskStatus = async (taskId: number, newStatusId: number) => {
         try {
-            await api.patch(`/tasks/${taskId}`, { status: newStatus });
-            // Update local state
-            setTasks(tasks.map(task => 
-                task.id === taskId ? { ...task, status: newStatus } : task
-            ));
-        } catch (err: any) {
+            // send nested status object as required by API
+            const updated = await api.patch<Task>(`/tasks/${taskId}/`, { status_id: newStatusId  });
+            setTasks(tasks.map((t) => (t.id === taskId ? updated : t)));
+        } catch (err: unknown) {
             console.error("Error updating task status:", err);
             alert("Failed to update task status");
         }
     };
 
-    const filteredTasks = tasks.filter(task => {
+    const filteredTasks = tasks.filter((task) => {
         if (filter === "all") return true;
-        return task.status.toLowerCase() === filter.toLowerCase();
+        return task.status.name.toLowerCase() === filter.toLowerCase();
     });
 
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
+    const getStatusColor = (statusName: string) => {
+        switch (statusName.toLowerCase()) {
             case "completed":
                 return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-            case "in_progress":
             case "in progress":
+            case "in_progress":
                 return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
             case "pending":
                 return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
@@ -81,21 +82,9 @@ export default function MyTasksPage() {
         }
     };
 
-    const getPriorityColor = (priority?: string) => {
-        if (!priority) return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
-        switch (priority.toLowerCase()) {
-            case "high":
-                return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
-            case "medium":
-                return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400";
-            case "low":
-                return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-            default:
-                return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
-        }
-    };
+    // priority removed from tasks
 
-    const formatDate = (dateString?: string) => {
+    const formatDate = (dateString?: string | null) => {
         if (!dateString) return "No due date";
         const date = new Date(dateString);
         return date.toLocaleDateString("en-US", {
@@ -145,9 +134,12 @@ export default function MyTasksPage() {
 
     const taskCounts = {
         all: tasks.length,
-        pending: tasks.filter(t => t.status.toLowerCase() === "pending").length,
-        in_progress: tasks.filter(t => t.status.toLowerCase() === "in_progress" || t.status.toLowerCase() === "in progress").length,
-        completed: tasks.filter(t => t.status.toLowerCase() === "completed").length,
+        pending: tasks.filter((t) => t.status.name.toLowerCase() === "pending").length,
+        in_progress: tasks.filter((t) => {
+            const n = t.status.name.toLowerCase();
+            return n === "in_progress" || n === "in progress";
+        }).length,
+        completed: tasks.filter((t) => t.status.name.toLowerCase() === "completed").length,
     };
 
     return (
@@ -225,29 +217,20 @@ export default function MyTasksPage() {
                                         <div className="flex gap-2 flex-wrap">
                                             <span
                                                 className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                                                    task.status
+                                                    task.status.name
                                                 )}`}
                                             >
-                                                {task.status.replace("_", " ")}
+                                                {task.status.name}
                                             </span>
-                                            {task.priority && (
-                                                <span
-                                                    className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                                                        task.priority
-                                                    )}`}
-                                                >
-                                                    {task.priority}
-                                                </span>
-                                            )}
-                                            {task.project_name && (
+                                            {task.project?.name && (
                                                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                                                    {task.project_name}
+                                                    {task.project.name}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Due: {formatDate(task.due_date)}
+                                        <div className="text-sm text-muted-foreground">
+                                        Due: {formatDate(task.deadline)}
                                     </div>
                                 </div>
                             </CardHeader>
@@ -258,31 +241,31 @@ export default function MyTasksPage() {
                                     </CardDescription>
                                 )}
                                 <div className="flex gap-2 flex-wrap">
-                                    {task.status.toLowerCase() !== "completed" && (
+                                    {task.status.name.toLowerCase() !== "completed" && (
                                         <>
-                                            {task.status.toLowerCase() === "pending" && (
+                                            {task.status.name.toLowerCase() === "pending" && (
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => updateTaskStatus(task.id, "in_progress")}
+                                                    onClick={() => updateTaskStatus(task.id, 2)}
                                                 >
                                                     Start Task
                                                 </Button>
                                             )}
-                                            {(task.status.toLowerCase() === "in_progress" || task.status.toLowerCase() === "in progress") && (
+                                            {(task.status.name.toLowerCase() === "in_progress" || task.status.name.toLowerCase() === "in progress") && (
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => updateTaskStatus(task.id, "completed")}
+                                                    onClick={() => updateTaskStatus(task.id, 3)}
                                                 >
                                                     Mark Complete
                                                 </Button>
                                             )}
                                         </>
                                     )}
-                                    {task.status.toLowerCase() === "completed" && (
+                                    {task.status.name.toLowerCase() === "completed" && (
                                         <Button
                                             size="sm"
                                             variant="outline"
-                                            onClick={() => updateTaskStatus(task.id, "in_progress")}
+                                            onClick={() => updateTaskStatus(task.id, 2)}
                                         >
                                             Reopen Task
                                         </Button>

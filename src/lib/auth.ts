@@ -1,6 +1,8 @@
 export interface DecodedToken {
     user_id: number;
     email: string;
+    // New token shape: single `role` object. Keep `roles` optional for backward compatibility.
+    role?: { id: number; role_name?: string; name?: string } | null;
     roles?: string[];
     exp: number;
     iat: number;
@@ -32,13 +34,18 @@ export function decodeToken(token: string): DecodedToken | null {
 export function getUserRoles(token: string): string[] {
     const decoded = decodeToken(token);
     if (!decoded) return [];
-    // Support either `roles` array or a single `role` object in the token
-    if (Array.isArray(decoded.roles) && decoded.roles.length) return decoded.roles;
+    // If token contains a single `role` object, derive roles array from it
     if (decoded.role) {
-        // role object may have `role_name` or `name`
-        const rn = (decoded.role as any).role_name || (decoded.role as any).name || String((decoded.role as any).id);
-        return [rn];
+        const r = decoded.role as { role_name?: string; name?: string; id?: number };
+        const roleName = r.role_name || r.name || (r.id !== undefined ? String(r.id) : undefined);
+        return roleName ? [roleName] : [];
     }
+    // Fallback: if token has legacy `roles` array, return it
+    const legacyRoles = (decoded as unknown as { roles?: string[] }).roles;
+    if (Array.isArray(legacyRoles)) {
+        return legacyRoles;
+    }
+
     return [];
 }
 
