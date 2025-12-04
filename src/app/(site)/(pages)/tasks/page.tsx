@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
@@ -55,6 +54,10 @@ export default function TasksPage() {
     const [newProject, setNewProject] = useState<number | null>(null);
     const [newAssignee, setNewAssignee] = useState<number | null>(null);
     const [newDue, setNewDue] = useState<string>("");
+
+    // filters for the tasks table
+    const [filterAssignee, setFilterAssignee] = useState<number | "all">("all");
+    const [filterStatus, setFilterStatus] = useState<string>("all");
     
 
     useEffect(() => {
@@ -102,7 +105,7 @@ export default function TasksPage() {
 
     const updateTask = async (taskId: number, patch: Partial<Task>) => {
         try {
-            const updated = await api.patch<Task>(`/tasks/${taskId}/`, patch);
+            const updated = await api.patch<Task>(`/tasks/${taskId}/`, {status_id:patch.status?.id});
             setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
         } catch (err: unknown) {
             console.error("Update failed", err);
@@ -348,81 +351,153 @@ export default function TasksPage() {
                 </CardContent>
             </Card>
 
+            {/* Filters for Tasks Table */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Filter Tasks</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <Label>Assignee</Label>
+                            <select
+                                value={filterAssignee}
+                                onChange={(e) => setFilterAssignee(e.target.value === "all" ? "all" : Number(e.target.value))}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            >
+                                <option value="all">All</option>
+                                {users.map((u) => (
+                                    <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <Label>Status</Label>
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            >
+                                <option value="all">All</option>
+                                <option value="todo">Todo</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+
+                        <div className="flex gap-2 md:justify-start">
+                            <Button variant="outline" onClick={() => { setFilterAssignee("all"); setFilterStatus("all"); }}>
+                                Clear
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Tasks Table */}
             <Card>
                 <CardHeader>
                     <CardTitle>All Tasks</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {tasks.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">No tasks found</div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-border">
-                                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Title</th>
-                                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Project</th>
-                                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Assignee</th>
-                                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Status</th>
-                                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Deadline</th>
-                                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Created</th>
-                                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {tasks.map((task) => (
-                                        <tr key={task.id} className="border-b border-border hover:bg-muted/50 transition-colors">
-                                            <td className="py-3 px-4 font-medium">{task.title}</td>
-                                            <td className="py-3 px-4 text-sm text-muted-foreground">{task.project?.name ?? "—"}</td>
-                                            <td className="py-3 px-4 text-sm text-muted-foreground">
-                                                {task.assignee?.username ?? "Unassigned"}
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(task.status.id)}`}>
-                                                    {getStatusLabel(task.status.name ?? task.status.id)}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-4 text-sm text-muted-foreground">{task.deadline ? new Date(task.deadline).toLocaleDateString() : "—"}</td>
-                                            <td className="py-3 px-4 text-sm text-muted-foreground">{task.created_at ? new Date(task.created_at).toLocaleDateString() : "—"}</td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => updateTask(task.id, { status: { id: 3, name: "Completed" } })}
-                                                        className="px-2 py-1 rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors text-sm"
-                                                        title="Mark complete"
-                                                    >
-                                                        Complete
-                                                    </button>
-                                                    <button
-                                                        onClick={() => updateTask(task.id, { status: { id: 1, name: "Todo" } })}
-                                                        className="px-2 py-1 rounded-md bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors text-sm"
-                                                        title="Reset status"
-                                                    >
-                                                        Reset
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleEdit(task.id)}
-                                                        className="p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                                        title="Edit task"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(task.id)}
-                                                        className="p-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
-                                                        title="Delete task"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
+                    {(() => {
+                        // apply filters
+                        const filtered = tasks.filter((task) => {
+                            // assignee filter
+                            if (filterAssignee !== "all") {
+                                if (!task.assignee || task.assignee.id !== Number(filterAssignee)) return false;
+                            }
+
+                            // status filter
+                            if (filterStatus !== "all") {
+                                const statusKey = ((): string => {
+                                    if (typeof task.status.name === "string") return task.status.name.replace(/ /g, "_").toLowerCase();
+                                    if (typeof task.status.id === "number") {
+                                        if (task.status.id === 1) return "todo";
+                                        if (task.status.id === 2) return "in_progress";
+                                        if (task.status.id === 3) return "completed";
+                                    }
+                                    return String(task.status.name || task.status.id).toLowerCase();
+                                })();
+                                if (statusKey !== filterStatus) return false;
+                            }
+
+                            return true;
+                        });
+
+                        if (filtered.length === 0) {
+                            return <div className="text-center py-8 text-muted-foreground">No tasks found</div>;
+                        }
+
+                        return (
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-border">
+                                            <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Title</th>
+                                            <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Project</th>
+                                            <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Assignee</th>
+                                            <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Status</th>
+                                            <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Deadline</th>
+                                            <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Created</th>
+                                            <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    </thead>
+                                    <tbody>
+                                        {filtered.map((task) => (
+                                            <tr key={task.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                                                <td className="py-3 px-4 font-medium">{task.title}</td>
+                                                <td className="py-3 px-4 text-sm text-muted-foreground">{task.project?.name ?? "—"}</td>
+                                                <td className="py-3 px-4 text-sm text-muted-foreground">
+                                                    {task.assignee?.username ?? "Unassigned"}
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(task.status.id)}`}>
+                                                        {getStatusLabel(task.status.name ?? task.status.id)}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4 text-sm text-muted-foreground">{task.deadline ? new Date(task.deadline).toLocaleDateString() : "—"}</td>
+                                                <td className="py-3 px-4 text-sm text-muted-foreground">{task.created_at ? new Date(task.created_at).toLocaleDateString() : "—"}</td>
+                                                <td className="py-3 px-4">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() => updateTask(task.id, { status: { id: 3, name: "Completed" } })}
+                                                            className="px-2 py-1 rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors text-sm"
+                                                            title="Mark complete"
+                                                        >
+                                                            Complete
+                                                        </button>
+                                                        <button
+                                                            onClick={() => updateTask(task.id, { status: { id: 1, name: "Todo" } })}
+                                                            className="px-2 py-1 rounded-md bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors text-sm"
+                                                            title="Reset status"
+                                                        >
+                                                            Reset
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEdit(task.id)}
+                                                            className="p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                            title="Edit task"
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(task.id)}
+                                                            className="p-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
+                                                            title="Delete task"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        );
+                    })()}
                 </CardContent>
             </Card>
         </div>
