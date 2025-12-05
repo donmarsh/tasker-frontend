@@ -96,15 +96,7 @@ export default function LoginPage() {
                                 }}
                             />
                         </div>
-                        <div className="flex items-center justify-between">
-                            
-                            <Link
-                                href="/forgot-password"
-                                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                            >
-                                Forgot password?
-                            </Link>
-                        </div>
+                        
                         <Button className="w-full" type="submit" disabled={isLoading}>
                             {isLoading ? "Signing in..." : "Sign In"}
                         </Button>

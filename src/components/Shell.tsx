@@ -15,7 +15,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     }, [pathname]);
 
     // Check if the current path is an auth page
-    const isAuthPage = ["/login", "/signup", "/forgot-password", "/reset-password"].some(path => pathname?.startsWith(path)) || pathname === "/";
+    const isAuthPage = ["/login", "/reset-password"].some(path => pathname?.startsWith(path)) || pathname === "/";
 
     if (isAuthPage) {
         return <main className="min-h-screen bg-background">{children}</main>;

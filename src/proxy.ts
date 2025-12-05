@@ -4,9 +4,7 @@ import type { NextRequest } from "next/server";
 // Define the paths that are public and don't require authentication
 const publicPaths = [
     "/login",
-    "/signup",
-    "/forgot-password",
-    "/reset-password",
+    
 ];
 
 export function proxy(request: NextRequest) {

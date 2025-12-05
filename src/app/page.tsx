@@ -12,9 +12,7 @@ export default function LandingPage() {
         Tasker provides all the tools you need to manage projects efficiently.
       </p>
       <div className="mt-10 flex items-center justify-center gap-x-6">
-        <Button size="lg" asChild>
-          <Link href="/signup">Get started</Link>
-        </Button>
+
         <Button variant="outline" size="lg" asChild>
           <Link href="/login">Log in</Link>
         </Button>
