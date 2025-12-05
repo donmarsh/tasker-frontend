@@ -187,7 +187,7 @@ export default function TasksPage() {
         const normalize = (v?: number | string) => {
             if (typeof v === "number") {
                 if (v === 1) return "todo";
-                if (v === 2) return "in_progress";
+                if (v === 2) return "in progress";
                 if (v === 3) return "completed";
                 return "unknown";
             }

@@ -25,19 +25,25 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
         }
 
         // Parse JSON body if possible. The backend returns a simple
-        // `{ "error": "..." }` structure on failure — prefer that.
+        // `{ "error": "..." }` or `{ "detail": "..." }` structure on failure — prefer that.
         const errorBody = await res.json();
         console.log('API error body:', errorBody);
         let message = `API Error: ${res.status}`;
 
         if (errorBody && typeof errorBody['error'] === 'string') {
             message = String(errorBody['error']);
+        } else if (errorBody && typeof errorBody['detail'] === 'string') {
+            message = String(errorBody['detail']);
         }
 
         const e = new Error(message) as Error & { body?: unknown; status?: number };
         e.body = errorBody;
         e.status = res.status;
         throw e;
+    }
+
+    if (res.status === 204 || res.headers.get('content-length') === '0') {
+        return undefined as T;
     }
 
     return res.json();
