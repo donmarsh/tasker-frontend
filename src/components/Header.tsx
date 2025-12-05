@@ -73,13 +73,6 @@ export function Header({ onMenuClick }: HeaderProps) {
                                 </div>
                                 <div className="h-px bg-border my-1" />
                                 <button
-                                    onClick={() => router.push("/settings")}
-                                    className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-                                >
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    <span>Settings</span>
-                                </button>
-                                <button
                                     onClick={handleLogout}
                                     className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground text-red-500 hover:text-red-600"
                                 >
