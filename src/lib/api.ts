@@ -24,20 +24,25 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
             // window.location.href = '/login';
         }
 
-        // Parse JSON body if possible. The backend returns a simple
-        // `{ "error": "..." }` or `{ "detail": "..." }` structure on failure — prefer that.
-        const errorBody = await res.json();
-        console.log('API error body:', errorBody);
+        const rawBody = await res.text();
+        let parsedBody: unknown = null;
         let message = `API Error: ${res.status}`;
 
-        if (errorBody && typeof errorBody['error'] === 'string') {
-            message = String(errorBody['error']);
-        } else if (errorBody && typeof errorBody['detail'] === 'string') {
-            message = String(errorBody['detail']);
+        if (rawBody) {
+            try {
+                parsedBody = JSON.parse(rawBody);
+                if (parsedBody && typeof (parsedBody as Record<string, unknown>)['error'] === 'string') {
+                    message = String((parsedBody as Record<string, unknown>)['error']);
+                } else if (parsedBody && typeof (parsedBody as Record<string, unknown>)['detail'] === 'string') {
+                    message = String((parsedBody as Record<string, unknown>)['detail']);
+                }
+            } catch {
+                message = "An unexpected error occurred";
+            }
         }
 
         const e = new Error(message) as Error & { body?: unknown; status?: number };
-        e.body = errorBody;
+        e.body = parsedBody ?? rawBody;
         e.status = res.status;
         throw e;
     }
