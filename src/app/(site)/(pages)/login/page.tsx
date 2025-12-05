@@ -2,12 +2,12 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { api } from "@/lib/api";
+import { setStoredToken, clearStoredToken, setStoredRefreshToken } from "@/lib/auth";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -23,12 +23,47 @@ export default function LoginPage() {
         setError("");
 
         try {
-            await api.post("/auth/login/", { email, password });
-            // If successful, the middleware/backend handles the cookie.
-            // We just need to redirect.
+            const data = await api.post<Record<string, unknown>>("/auth/login/", { email, password });
+            console.log("Login successful:", data);
+
+            const result = (data && typeof data === "object") ? (data as Record<string, unknown>) : null;
+            const tokens = result?.tokens && typeof result.tokens === "object" && result.tokens !== null
+                ? (result.tokens as Record<string, unknown>)
+                : null;
+
+            const accessTokenCandidates = [
+                result?.access_token,
+                result?.access,
+                tokens?.access,
+                tokens?.access_token,
+                result?.token,
+                tokens?.token,
+            ];
+
+            const accessToken = accessTokenCandidates.find((candidate): candidate is string => typeof candidate === "string") ?? null;
+
+            if (!accessToken) {
+                throw new Error("Login response did not include an access token");
+            }
+
+            setStoredToken(accessToken);
+
+            const refreshTokenCandidates = [
+                result?.refresh_token,
+                result?.refresh,
+                tokens?.refresh,
+                tokens?.refresh_token,
+            ];
+
+            const refreshToken = refreshTokenCandidates.find((candidate): candidate is string => typeof candidate === "string") ?? null;
+
+            if (refreshToken) {
+                setStoredRefreshToken(refreshToken);
+            }
             router.push("/dashboard");
             router.refresh(); // Refresh to update middleware state
         } catch (err: unknown) {
+            clearStoredToken();
             const message = ((): string => {
                 if (err instanceof Error) {
                     const e = err as Error & { body?: unknown };

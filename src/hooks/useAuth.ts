@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { clearStoredToken, decodeToken, getStoredToken, getUserRoles, TOKEN_STORAGE_KEY, TOKEN_CHANGE_EVENT } from "@/lib/auth";
 
 interface UserInfo {
     authenticated: boolean;
@@ -23,41 +24,82 @@ export function useAuth() {
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    useEffect(() => {
-        fetchUserInfo();
+    const resetState = useCallback(() => {
+        setRoles([]);
+        setUserId(null);
+        setEmail(null);
+        setUsername(null);
+        setFullname(null);
+        setIsAdmin(false);
+        setIsManager(false);
+        setIsAuthenticated(false);
     }, []);
 
-    const fetchUserInfo = async () => {
-        try {
-            const response = await fetch('/api/auth/me', {
-                credentials: 'include', // Important: include cookies
-            });
+    const syncFromToken = useCallback(() => {
+        const token = getStoredToken();
 
-            if (response.ok) {
-                const data: UserInfo = await response.json();
-
-                if (data.authenticated) {
-                    // derive roles array from `role` object, or fall back to legacy `roles`
-                    const derivedRoles = data.role ? [data.role.role_name || data.role.name || String(data.role.id)] : (data.role || []);
-                    setRoles(derivedRoles);
-                    setUserId(data.user_id || null);
-                    setEmail(data.email || null);
-                    // prefer explicit username/name if available, otherwise fall back to email
-                    const possibleUsername = (data as unknown as Record<string, unknown>).username || (data as unknown as Record<string, unknown>).name || data.email;
-                    setFullname(data.full_name || null);
-                    setUsername(typeof possibleUsername === "string" ? possibleUsername : null);
-                    setIsAdmin(derivedRoles.includes('Admin') || derivedRoles.includes('admin'));
-                    setIsManager(derivedRoles.includes('Manager') || derivedRoles.includes('manager'));
-                    setIsAuthenticated(true);
-                    console.log("User info:", data);
-                }
-            }
-        } catch (error) {
-            console.error("Failed to fetch user info:", error);
-        } finally {
+        if (!token) {
+            resetState();
             setIsLoading(false);
+            return;
         }
-    };
+
+        const decoded = decodeToken(token) as (UserInfo & { exp?: number }) | null;
+
+        if (!decoded) {
+            clearStoredToken();
+            resetState();
+            setIsLoading(false);
+            return;
+        }
+
+        if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+            clearStoredToken();
+            resetState();
+            setIsLoading(false);
+            return;
+        }
+
+        const derivedRoles = getUserRoles(token);
+        setRoles(derivedRoles);
+        setUserId(decoded.user_id || null);
+        setEmail(decoded.email || null);
+        const possibleUsername = decoded.username || (decoded as unknown as Record<string, unknown>).name || decoded.email;
+        setUsername(typeof possibleUsername === "string" ? possibleUsername : null);
+        setFullname(decoded.full_name || null);
+        setIsAdmin(derivedRoles.includes('Admin') || derivedRoles.includes('admin'));
+        setIsManager(derivedRoles.includes('Manager') || derivedRoles.includes('manager'));
+        setIsAuthenticated(true);
+        setIsLoading(false);
+    }, [resetState]);
+
+    useEffect(() => {
+        Promise.resolve().then(() => {
+            syncFromToken();
+        });
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === TOKEN_STORAGE_KEY) {
+                syncFromToken();
+            }
+        };
+
+        const handleTokenChange = () => {
+            syncFromToken();
+        };
+
+        if (typeof window !== "undefined") {
+            window.addEventListener('storage', handleStorage);
+            window.addEventListener(TOKEN_CHANGE_EVENT, handleTokenChange);
+        }
+
+        return () => {
+            if (typeof window !== "undefined") {
+                window.removeEventListener('storage', handleStorage);
+                window.removeEventListener(TOKEN_CHANGE_EVENT, handleTokenChange);
+            }
+        };
+    }, [syncFromToken]);
 
     return { roles, userId, email, full_name, username, isAdmin, isManager, isLoading, isAuthenticated };
 }

@@ -1,3 +1,5 @@
+import { getStoredToken, clearStoredToken } from "@/lib/auth";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 interface FetchOptions extends RequestInit {
@@ -6,22 +8,28 @@ interface FetchOptions extends RequestInit {
 
 export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
     const { headers, ...rest } = options;
+    console.log(API_URL + endpoint, options);
+    const token = typeof window !== "undefined" ? getStoredToken() : null;
+    const finalHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(headers ?? {}),
+    };
+
+    if (token) {
+        finalHeaders.Authorization = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+    }
 
     const res = await fetch(`${API_URL}${endpoint}`, {
-        headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-        },
-        // Important: This ensures cookies are sent with the request
-        credentials: 'include',
+        headers: finalHeaders,
         ...rest,
     });
 
     if (!res.ok) {
         // Handle 401 Unauthorized globally if needed, though middleware catches most
         if (res.status === 401) {
-            // Optional: Redirect to login or clear local state
-            // window.location.href = '/login';
+            if (typeof window !== "undefined") {
+                clearStoredToken();
+            }
         }
 
         const rawBody = await res.text();

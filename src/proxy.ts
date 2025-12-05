@@ -1,58 +1,18 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Define the paths that are public and don't require authentication
-const publicPaths = [
-    "/login",
-    
-];
-
-export function proxy(request: NextRequest) {
-    const { pathname } = request.nextUrl;
-
-    // Debug log to verify middleware is running
-    console.log(`[Proxy Debug] Middleware running for path: ${pathname}`);
-
-    // Check if the current path is a public path
-    const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
-    console.log(`[Proxy Debug] Is public path: ${isPublicPath}`);
-
-    // Get the token from the cookies
-    const token = request.cookies.get("access_token")?.value;
-    console.log(`[Proxy Debug] Token present: ${!!token}`);
-
-    // Redirect logic
-    if (!token && !isPublicPath) {
-        // If user is not authenticated and trying to access a protected route
-        const url = request.nextUrl.clone();
-        url.pathname = "/login";
-        url.searchParams.set("callbackUrl", pathname);
-        console.log(`[Proxy Debug] Redirecting to login`);
-        return NextResponse.redirect(url);
-    }
-
-    if (token && isPublicPath) {
-        // If user is authenticated and trying to access a public route
-        const url = request.nextUrl.clone();
-        url.pathname = "/dashboard";
-        console.log(`[Proxy Debug] Redirecting to dashboard`);
-        return NextResponse.redirect(url);
-    }
-
+/**
+ * Middleware proxy previously enforced auth by checking for an httpOnly cookie. Since
+ * tokens now travel via Authorization headers, we can't inspect them in middleware.
+ * Leave the hook in place for future enhancements but allow all requests to proceed.
+ */
+export function proxy(_request: NextRequest) {
+    void _request;
     return NextResponse.next();
 }
 
-// Configure the middleware to run on specific paths
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - api (API routes)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder files (images, etc)
-         */
         "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
     ],
 };

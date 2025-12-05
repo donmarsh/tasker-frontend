@@ -4,6 +4,7 @@ import {  User, Menu, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "./ThemeToggle";
 import { api } from "@/lib/api";
+import { clearStoredToken } from "@/lib/auth";
 
 interface HeaderProps {
     onMenuClick: () => void;
@@ -21,10 +22,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 // Ignore error if endpoint doesn't exist or fails, just clear client state
             });
         } finally {
-            // Try to clear any client-side cookies (though httpOnly cookies can only be cleared by backend)
-            document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-            document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-            document.cookie = "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+            clearStoredToken();
 
 
             // Redirect to login

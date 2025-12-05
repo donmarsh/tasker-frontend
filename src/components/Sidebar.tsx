@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
+import { clearStoredToken } from "@/lib/auth";
 
 const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false, managerOnly: false },
@@ -34,11 +35,7 @@ export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
         try {
             await api.post("/auth/logout/", {}).catch(() => {});
         } finally {
-            // clear client-side cookies (httpOnly cookies require backend)
-            document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-            document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-            document.cookie = "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-
+            clearStoredToken();
             router.push("/login");
             router.refresh();
         }

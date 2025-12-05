@@ -1,21 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Shell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const router = useRouter();
+    const { isAuthenticated, isLoading } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // Close mobile menu when route changes
     useEffect(() => {
-        setIsMobileMenuOpen(false);
+        Promise.resolve().then(() => setIsMobileMenuOpen(false));
     }, [pathname]);
 
     // Check if the current path is an auth page
     const isAuthPage = ["/login", "/reset-password"].some(path => pathname?.startsWith(path)) || pathname === "/";
+
+    useEffect(() => {
+        if (!isAuthPage && !isLoading && !isAuthenticated) {
+            router.replace("/login");
+        }
+    }, [isAuthPage, isLoading, isAuthenticated, router]);
+
+    if (!isAuthPage && isLoading) {
+        return <main className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">Loading...</main>;
+    }
 
     if (isAuthPage) {
         return <main className="min-h-screen bg-background">{children}</main>;

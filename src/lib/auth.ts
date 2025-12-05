@@ -9,6 +9,50 @@ export interface DecodedToken {
     iat: number;
 }
 
+export const TOKEN_STORAGE_KEY = "tasker_access_token";
+export const REFRESH_TOKEN_STORAGE_KEY = "tasker_refresh_token";
+export const TOKEN_CHANGE_EVENT = "tasker-auth-token-changed";
+
+const emitTokenChange = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event(TOKEN_CHANGE_EVENT));
+};
+
+export function getStoredToken(): string | null {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(TOKEN_STORAGE_KEY);
+}
+
+export function setStoredToken(token: string) {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    emitTokenChange();
+}
+
+export function clearStoredToken() {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+    emitTokenChange();
+}
+
+export function getStoredRefreshToken(): string | null {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+}
+
+export function setStoredRefreshToken(token: string) {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, token);
+    emitTokenChange();
+}
+
+export function clearStoredRefreshToken() {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+    emitTokenChange();
+}
+
 /**
  * Decode a JWT token (client-side)
  */
@@ -63,16 +107,7 @@ export function isAdmin(token: string): boolean {
  * Get token from cookies (client-side)
  */
 export function getClientToken(): string | null {
-    if (typeof document === 'undefined') return null;
-
-    const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(c => c.trim().startsWith('access_token='));
-
-    if (tokenCookie) {
-        return tokenCookie.split('=')[1];
-    }
-
-    return null;
+    return getStoredToken();
 }
 
 /**
